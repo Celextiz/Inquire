@@ -1,0 +1,810 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Phyrex Dashboard</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" />
+  <link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.css" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/jquery.dataTables.min.css" />
+  <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.js"></script>
+  <style>
+    body { background:#f8f9fa; }
+    .sidebar { height:100vh; background:#343a40; color:#fff; padding-top:20px; }
+    .sidebar a { color:#fff; text-decoration:none; display:block; padding:10px 20px; }
+    .sidebar a:hover { background:#495057; }
+    #patients h3 { margin-bottom:1rem; }
+
+    /* Analytics tiles */
+    .analytics-row { display:flex; gap:16px; margin-bottom:18px; align-items:stretch; flex-wrap:wrap; }
+    .tile { background:#fff; border-radius:10px; padding:14px; flex:1 1 220px; display:flex; gap:12px; align-items:center; box-shadow:0 6px 18px rgba(11,18,32,0.06); }
+    .tile .icon { width:44px; height:44px; display:flex; align-items:center; justify-content:center; border-radius:8px; background:#eef2ff; }
+    .tile .value { font-weight:700; font-size:1.25rem; }
+    .tile .label { font-size:0.86rem; color:#6c757d; }
+    .tile small.meta { display:block; color:#6c757d; margin-top:6px; font-size:0.82rem; }
+
+    .records-preview { max-width:320px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; font-size:13px; color:#212529; }
+    .modal-lg-custom{max-width:1100px;}
+    .step { display:none; } .step.active { display:block; }
+    .step-pill{padding:6px 10px;border-radius:6px;background:#e9ecef;margin-right:8px;}
+    .step-pill.active{background:#0d6efd;color:#fff;}
+    textarea.form-control{min-height:80px;resize:vertical}
+    .save-step { display:flex; align-items:center; gap:8px; margin-bottom:12px; }
+
+    @media (max-width:850px){
+      .analytics-row{flex-direction:column}
+    }
+  </style>
+</head>
+<body>
+  <div class="container-fluid">
+    <div class="row">
+      <div class="col-md-2 sidebar">
+        <h4 class="text-center">Dashboard</h4>
+        <a href="#home">Home</a>
+        <a href="#notifications">Notifications</a>
+        <a href="#patients">Patient</a>
+        <a href="#" id="openAddPatient">Add Patient</a>
+        <a href="#appointments">Appointments</a>
+        <a href="login.html">Log Out</a>
+      </div>
+
+      <div class="col-md-10 p-4">
+        <h2>Analytics Overview</h2>
+
+        <!-- Analytics tiles -->
+        <div class="analytics-row" id="analyticsRow">
+          <div class="tile" id="tilePatients">
+            <div class="icon" aria-hidden>
+              <!-- simple patient icon -->
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 12c2.761 0 5-2.239 5-5s-2.239-5-5-5-5 2.239-5 5 2.239 5 5 5z" stroke="#4f46e5" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round"/><path d="M4 20.5c0-2.485 3.582-4.5 8-4.5s8 2.015 8 4.5" stroke="#4f46e5" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </div>
+            <div>
+              <div class="value" id="countPatients">0</div>
+              <div class="label">Patients</div>
+              <small class="meta" id="metaPatients">Total patients stored</small>
+            </div>
+          </div>
+
+          <div class="tile" id="tileInquiries">
+            <div class="icon" aria-hidden style="background:#fff7ed">
+              <!-- enquiry icon -->
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M21 12v6a2 2 0 0 1-2 2H6l-4 0V6a2 2 0 0 1 2-2h13" stroke="#f97316" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round"/><path d="M17 8h-6" stroke="#f97316" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </div>
+            <div style="flex:1">
+              <div class="d-flex align-items-baseline justify-content-between">
+                <div>
+                  <div class="value" id="countInquiries">0</div>
+                  <div class="label">Pending Inquiries</div>
+                </div>
+                <div>
+                  <button class="btn btn-sm btn-outline-primary" id="openInquiries">View</button>
+                </div>
+              </div>
+              <div class="small text-muted" id="metaInquiries">From inquire form</div>
+            </div>
+          </div>
+
+          <div class="tile" id="tileCases">
+            <div class="icon" aria-hidden style="background:#ecfeff">
+              <!-- cases icon -->
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M3 7h18M7 7v12a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1V7" stroke="#06b6d4" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round"/><path d="M9 3v4M15 3v4" stroke="#06b6d4" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </div>
+            <div>
+              <div class="value" id="mostCases">—</div>
+              <div class="label">Most common Cases</div>
+              <small class="meta" id="metaCases">Top two cases and counts</small>
+            </div>
+          </div>
+
+          <div class="tile" id="tileRecords">
+            <div class="icon" aria-hidden style="background:#f0fdf4">
+              <!-- clipboard icon -->
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M9 3h6l1 2h-8l1-2z" stroke="#10b981" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round"/><rect x="3" y="5" width="18" height="16" rx="2" stroke="#10b981" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round"/><path d="M8 11h8M8 15h8" stroke="#10b981" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </div>
+            <div>
+              <div class="value" id="recordsCounts">0 / 0 / 0</div>
+              <div class="label">Saved Record Steps</div>
+              <small class="meta" id="metaRecords">Step1 • Step2 • Step3 counts</small>
+            </div>
+          </div>
+        </div>
+
+        <!-- Patient table (unchanged from previous version) -->
+        <div id="patients" class="mt-2">
+          <h3>Patient List</h3>
+          <table id="AddPatients" class="display table table-striped" style="width:100%">
+            <thead class="table-dark">
+              <tr>
+                <th>First Name</th>
+                <th>Last Name</th>
+                <th>Middle Name</th>
+                <th>Phone Number</th>
+                <th>Age</th>
+                <th>Case</th>
+                <th>Records Preview</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+          <div class="small text-muted mt-2">Hint: use the search box to filter patients</div>
+        </div>
+
+        <div id="appointments" class="mt-5">
+          <h3>Appointments Calendar</h3>
+          <div id="calendar"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Records modal (full 3-step form) -->
+  <div class="modal fade" id="recordsModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-lg-custom">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Patient Records</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <div class="d-flex mb-3">
+            <div class="step-pill active" data-step="0">1 Patient's Information</div>
+            <div class="step-pill" data-step="1">2 Subjective Data</div>
+            <div class="step-pill" data-step="2">3 Objective Data</div>
+          </div>
+
+          <form id="recordsForm">
+            <div class="save-step">
+              <label><input type="checkbox" id="saveStep1" /> Save Patient Information</label>
+              <label><input type="checkbox" id="saveStep2" /> Save Subjective Data</label>
+              <label><input type="checkbox" id="saveStep3" /> Save Objective Data</label>
+            </div>
+
+            <!-- Step 1 -->
+            <div class="step active" data-step="0">
+              <div class="row g-2">
+                <div class="col-md-6"><label>Patient's Full Name</label><input id="rec_fullname" class="form-control" type="text" /></div>
+                <div class="col-md-2"><label>Age</label><input id="rec_age" class="form-control" type="number" min="0" /></div>
+                <div class="col-md-4">
+                  <label>Sex</label><br/>
+                  <div class="form-check form-check-inline"><input name="rec_sex" class="form-check-input" type="radio" value="Male"><label class="form-check-label">Male</label></div>
+                  <div class="form-check form-check-inline"><input name="rec_sex" class="form-check-input" type="radio" value="Female"><label class="form-check-label">Female</label></div>
+                </div>
+              </div>
+
+              <div class="row g-2 mt-2">
+                <div class="col-md-4">
+                  <label>Status</label><br/>
+                  <div class="form-check form-check-inline"><input name="rec_status" class="form-check-input" type="radio" value="Single"><label class="form-check-label">Single</label></div>
+                  <div class="form-check form-check-inline"><input name="rec_status" class="form-check-input" type="radio" value="Married"><label class="form-check-label">Married</label></div>
+                  <div class="form-check form-check-inline"><input name="rec_status" class="form-check-input" type="radio" value="Widow/widower"><label class="form-check-label">Widow/widower</label></div>
+                </div>
+                <div class="col-md-8"><label>Address</label><input id="rec_address" class="form-control" type="text" /></div>
+              </div>
+
+              <div class="row g-2 mt-2">
+                <div class="col-md-4"><label>Occupation</label><input id="rec_occupation" class="form-control" type="text" /></div>
+                <div class="col-md-4">
+                  <label>Handedness</label><br/>
+                  <div class="form-check form-check-inline"><input name="rec_handed" class="form-check-input" type="radio" value="Right"><label class="form-check-label">Right</label></div>
+                  <div class="form-check form-check-inline"><input name="rec_handed" class="form-check-input" type="radio" value="Left"><label class="form-check-label">Left</label></div>
+                </div>
+                <div class="col-md-4">
+                  <label>Education level</label><br/>
+                  <div class="form-check form-check-inline"><input name="rec_edu" class="form-check-input" type="radio" value="Can read"><label class="form-check-label">Can read</label></div>
+                  <div class="form-check form-check-inline"><input name="rec_edu" class="form-check-input" type="radio" value="Can write"><label class="form-check-label">Can write</label></div>
+                  <div class="form-check form-check-inline"><input id="rec_edu_other_radio" name="rec_edu" class="form-check-input" type="radio" value="Other"><label class="form-check-label">Other</label></div>
+                  <input id="rec_edu_other" class="form-control mt-1" placeholder="If other, specify" />
+                </div>
+              </div>
+
+              <div class="row g-2 mt-2">
+                <div class="col-md-4"><label>Nationality</label><input id="rec_nationality" class="form-control" type="text" /></div>
+                <div class="col-md-4"><label>Referring MD</label><input id="rec_refmd" class="form-control" type="text" /></div>
+                <div class="col-md-4"><label>Rehab MD</label><input id="rec_rehabmd" class="form-control" type="text" /></div>
+              </div>
+
+              <div class="row g-2 mt-2">
+                <div class="col-md-4"><label>Date of referral</label><input id="rec_date_ref" class="form-control" type="date" /></div>
+                <div class="col-md-4"><label>Referring Unit/Hospital</label><input id="rec_unit" class="form-control" type="text" /></div>
+                <div class="col-md-4"><label>Phone Number</label><input id="rec_phone" class="form-control" type="text" /></div>
+              </div>
+
+              <div class="row g-2 mt-2">
+                <div class="col-md-6"><label>Registration Number</label><input id="rec_reg" class="form-control" /></div>
+                <div class="col-md-6"><label>Diagnosis</label><input id="rec_diagnosis" class="form-control" /></div>
+              </div>
+            </div>
+
+            <!-- Step 2 -->
+            <div class="step" data-step="1">
+              <h6>Subjective Data</h6>
+              <div class="mb-2"><label>Chief Complaints</label><textarea id="rec_chief" class="form-control"></textarea></div>
+              <div class="row g-2">
+                <div class="col-md-4"><label>Date of onset</label><input id="rec_onset" class="form-control" type="date" /></div>
+                <div class="col-md-8"><label>Mechanism of injury</label><input id="rec_mech" class="form-control" type="text" /></div>
+              </div>
+
+              <div class="mt-3">
+                <label>Past Medical History</label>
+                <div class="row g-2">
+                  <div class="col-md-4"><input id="rec_meds" class="form-control" placeholder="Medications" /></div>
+                  <div class="col-md-4"><input id="rec_surg" class="form-control" placeholder="Surgery" /></div>
+                  <div class="col-md-4"><input id="rec_lab" class="form-control" placeholder="Laboratory result" /></div>
+                </div>
+                <div class="row g-2 mt-2">
+                  <div class="col-md-4"><input id="rec_xray" class="form-control" placeholder="X-ray" /></div>
+                  <div class="col-md-4"><input id="rec_mre" class="form-control" placeholder="MRE" /></div>
+                  <div class="col-md-4"><input id="rec_ct" class="form-control" placeholder="CTSCAN" /></div>
+                </div>
+                <div class="row g-2 mt-2">
+                  <div class="col-md-6"><input id="rec_emg" class="form-control" placeholder="EMG-NCV" /></div>
+                  <div class="col-md-6"><input id="rec_prevther" class="form-control" placeholder="Previous Therapy / Sessions" /></div>
+                </div>
+
+                <div class="mt-2"><input id="rec_allergies" class="form-control" placeholder="Food and drug allergies" /></div>
+                <div class="mt-2"><textarea id="rec_heredo" class="form-control" placeholder="Heredofamilial diseases"></textarea></div>
+                <div class="mt-2 row g-2">
+                  <div class="col-md-6"><input id="rec_home" class="form-control" placeholder="Home Situation" /></div>
+                  <div class="col-md-6"><input id="rec_goals" class="form-control" placeholder="Patient Goal/s" /></div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Step 3 -->
+            <div class="step" data-step="2">
+              <h6>Objective Data</h6>
+
+              <div class="row g-2">
+                <div class="col-md-6">
+                  <label>Sensorium</label><br/>
+                  <div class="form-check form-check-inline"><input name="rec_sensor" class="form-check-input" type="checkbox" value="Alert"><label class="form-check-label">Alert</label></div>
+                  <div class="form-check form-check-inline"><input name="rec_sensor" class="form-check-input" type="checkbox" value="Drowsy"><label class="form-check-label">Drowsy</label></div>
+                  <div class="form-check form-check-inline"><input name="rec_sensor" class="form-check-input" type="checkbox" value="Lethargic"><label class="form-check-label">Lethargic</label></div>
+                </div>
+                <div class="col-md-6">
+                  <label>Body Built</label><br/>
+                  <div class="form-check form-check-inline"><input name="rec_built" class="form-check-input" type="radio" value="Ectomorph"><label class="form-check-label">Ectomorph</label></div>
+                  <div class="form-check form-check-inline"><input name="rec_built" class="form-check-input" type="radio" value="Mesomorph"><label class="form-check-label">Mesomorph</label></div>
+                  <div class="form-check form-check-inline"><input name="rec_built" class="form-check-input" type="radio" value="Endomorph"><label class="form-check-label">Endomorph</label></div>
+                </div>
+              </div>
+
+              <div class="row g-2 mt-2">
+                <div class="col-md-6">
+                  <label>Orientation to</label>
+                  <div class="form-check"><input name="rec_orient" class="form-check-input" type="checkbox" value="Person"><label class="form-check-label">Person</label></div>
+                  <div class="form-check"><input name="rec_orient" class="form-check-input" type="checkbox" value="Place"><label class="form-check-label">Place</label></div>
+                  <div class="form-check"><input name="rec_orient" class="form-check-input" type="checkbox" value="Day/Time"><label class="form-check-label">Day/Time</label></div>
+                  <input id="rec_orient_text" class="form-control mt-1" placeholder="If day/time, specify"/>
+                </div>
+
+                <div class="col-md-6">
+                  <label>Mobility</label><br/>
+                  <div class="form-check"><input name="rec_mob" class="form-check-input" type="checkbox" value="Ambulatory"><label class="form-check-label">Ambulatory</label></div>
+                  <div class="form-check"><input name="rec_mob" class="form-check-input" type="checkbox" value="Ambulatory with assistive device"><label class="form-check-label">Ambulatory w/ device</label></div>
+                  <input id="rec_mob_device" class="form-control mt-1" placeholder="Device"/>
+                  <div class="form-check mt-1"><input name="rec_mob" class="form-check-input" type="checkbox" value="Bed bound"><label class="form-check-label">Bed bound</label></div>
+                </div>
+              </div>
+
+              <div class="mt-3">
+                <label>Other findings</label>
+                <textarea id="rec_findings" class="form-control"></textarea>
+              </div>
+
+              <div class="row g-2 mt-3">
+                <div class="col-md-3"><label>Tenderness Grade</label><select id="rec_tender" class="form-select"><option value="">Choose</option><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option></select></div>
+                <div class="col-md-3"><label>Pitting edema</label><input id="rec_pitting" class="form-control" /></div>
+                <div class="col-md-3"><label>Swelling/Spasm/Crepitus</label><input id="rec_others" class="form-control" /></div>
+                <div class="col-md-3"><label>BP / PR / RR / SpO2 / Temp</label>
+                  <div class="d-flex gap-1"><input id="rec_bp" class="form-control" placeholder="BP"/><input id="rec_pr" class="form-control" placeholder="PR"/><input id="rec_rr" class="form-control" placeholder="RR"/></div>
+                  <div class="d-flex gap-1 mt-1"><input id="rec_spo2" class="form-control" placeholder="SpO2"/><input id="rec_temp" class="form-control" placeholder="Temp"/></div>
+                </div>
+              </div>
+            </div>
+
+            <div class="mt-3 d-flex justify-content-between">
+              <div><button type="button" id="recBack" class="btn btn-outline-secondary">Back</button></div>
+              <div>
+                <button type="button" id="recNext" class="btn btn-primary">Next</button>
+                <button type="submit" id="recSave" class="btn btn-success" style="display:none">Save Records</button>
+              </div>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+  </div>
+
+  <!-- Pending Inquiries modal (local inquiries) -->
+  <div class="modal fade" id="inquiriesModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-lg-custom">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Pending Inquiries</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <div id="inquiriesList" class="list-group"></div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+          <button class="btn btn-outline-danger" id="inquiriesClearAll">Mark all handled</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- scripts -->
+  <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+
+  <script>
+    // Storage keys
+    const STORAGE_KEY = 'patient_list_v1';
+    const INQUIRY_KEY = 'local_inquiries_v1';
+
+    // UI elements
+    let dataTable = null;
+    let currentRecordIndex = null;
+    const recordsModalEl = document.getElementById('recordsModal');
+    const recordsModal = new bootstrap.Modal(recordsModalEl);
+
+    // ---------- basic storage helpers ----------
+    function loadPatients(){ try { const raw = localStorage.getItem(STORAGE_KEY); return raw ? JSON.parse(raw) : []; } catch(e){ return []; } }
+    function savePatients(list){ try { localStorage.setItem(STORAGE_KEY, JSON.stringify(list)); localStorage.setItem(STORAGE_KEY + '_updated_at', Date.now()); } catch(e){} }
+
+    function loadInquiries(){ try { const raw = localStorage.getItem(INQUIRY_KEY); return raw ? JSON.parse(raw) : []; } catch(e){ return []; } }
+    function saveInquiries(list){ try { localStorage.setItem(INQUIRY_KEY, JSON.stringify(list)); localStorage.setItem(INQUIRY_KEY + '_updated_at', Date.now()); } catch(e){} }
+
+    // ---------- preview + table helpers ----------
+    function firstLine(text){
+      if(!text) return '';
+      const lines = text.trim().split(/\r?\n/).filter(Boolean);
+      return lines.length ? lines[0] : text.trim();
+    }
+    function buildPreviewForPatient(p){
+      const parts = [];
+      if(p.records && p.records.fullname) parts.push(p.records.fullname);
+      else { const nameParts = [p.firstName, p.lastName].filter(Boolean); if(nameParts.length) parts.push(nameParts.join(' ')); }
+      if(p.records && p.records.chief){
+        const c = firstLine(p.records.chief);
+        if(c) parts.push(c);
+      }
+      if(p.records && (p.records._objectiveSaved || p.records.findings || p.records.bp || p.records.tender)) {
+        parts.push('Objective saved');
+      }
+      return parts.length ? parts.join(' • ') : 'No records';
+    }
+
+    function buildDataForTable(){
+      const list = loadPatients();
+      return list.map((p, idx) => ({
+        firstName: p.firstName || '',
+        lastName: p.lastName || '',
+        middleName: p.middleName || '',
+        phoneNumber: p.phoneNumber || '',
+        age: p.age != null ? p.age : '',
+        caseField: p.case || '',
+        preview: buildPreviewForPatient(p),
+        __idx: idx
+      }));
+    }
+
+    function renderDataTable(){
+      const data = buildDataForTable();
+      if (dataTable) { dataTable.destroy(true); dataTable = null; $('#AddPatients tbody').off(); $('#AddPatients tbody').empty(); }
+
+      dataTable = $('#AddPatients').DataTable({
+        data: data,
+        columns: [
+          { data: 'firstName' },
+          { data: 'lastName' },
+          { data: 'middleName' },
+          { data: 'phoneNumber' },
+          { data: 'age' },
+          { data: 'caseField' },
+          { data: 'preview', render: function(val){ return '<div class="records-preview" title="'+(val||'')+'">'+(val||'')+'</div>'; } },
+          {
+            data: '__idx',
+            orderable: false,
+            searchable: false,
+            render: function(value){ return '<button class="btn btn-sm btn-outline-secondary records-btn" data-idx="'+value+'">View</button> ' +
+                                               '<button class="btn btn-sm btn-primary edit-btn" data-idx="'+value+'">Edit</button> ' +
+                                               '<button class="btn btn-sm btn-danger delete-btn" data-idx="'+value+'">Delete</button>'; }
+          }
+        ],
+        dom: 'ftip',
+        lengthChange: false,
+        info: false,
+        paging: true,
+        pageLength: 10,
+        processing: true,
+        responsive: true,
+        language: { emptyTable: "No patient records available" }
+      });
+
+      // Delegated handlers
+      $('#AddPatients tbody').on('click', '.edit-btn', function(){
+        const idx = this.dataset.idx;
+        if(confirm('Are you sure you want to edit ?')) openFormPopup(idx);
+      });
+
+      $('#AddPatients tbody').on('click', '.delete-btn', function(){
+        const idx = Number(this.dataset.idx);
+        if(!confirm('Are you sure you want to delete this patient?')) return;
+        const list = loadPatients();
+        if(idx >=0 && idx < list.length){ list.splice(idx,1); savePatients(list); renderDataTable(); updateAnalytics(); }
+      });
+
+      $('#AddPatients tbody').on('click', '.records-btn', function(){
+        const idx = Number(this.dataset.idx);
+        openRecordsModal(idx);
+      });
+    }
+
+    // ---------- analytics computations ----------
+    function computeAnalytics(){
+      const list = loadPatients();
+      const patientsCount = list.length;
+
+      // inquiries count (local inquiries)
+      const inquiries = loadInquiries();
+      const inquiryCount = Array.isArray(inquiries) ? inquiries.filter(i => i.status === 'pending').length : 0;
+
+      // most common cases (top 2)
+      const freq = {};
+      list.forEach(p => {
+        const c = (p.case || '').trim();
+        if(!c) return;
+        freq[c] = (freq[c] || 0) + 1;
+      });
+      const sortedCases = Object.entries(freq).sort((a,b)=>b[1]-a[1]);
+      const top = sortedCases.slice(0,2).map(([k,v])=> `${k} (${v})`);
+      const mostCasesText = top.length ? top.join(' • ') : '—';
+
+      // saved record steps counts
+      let s1=0, s2=0, s3=0;
+      list.forEach(p => {
+        const r = p.records || {};
+        if(r && (r.fullname || r.address || r.diagnosis || r.refmd || r.rehabmd)) s1++;
+        if(r && r.chief) s2++;
+        if(r && (r._objectiveSaved || r.findings || r.bp || r.tender || r.pitting)) s3++;
+      });
+
+      return { patientsCount, inquiryCount, mostCasesText, s1, s2, s3 };
+    }
+
+    function updateAnalytics(){
+      const a = computeAnalytics();
+      document.getElementById('countPatients').textContent = a.patientsCount;
+      document.getElementById('countInquiries').textContent = a.inquiryCount;
+      document.getElementById('mostCases').textContent = a.mostCasesText;
+      document.getElementById('recordsCounts').textContent = `${a.s1} / ${a.s2} / ${a.s3}`;
+      // update meta text details
+      document.getElementById('metaPatients').textContent = `Total patients stored: ${a.patientsCount}`;
+      document.getElementById('metaInquiries').textContent = `From inquire form: ${a.inquiryCount} pending`;
+      document.getElementById('metaCases').textContent = a.mostCasesText !== '—' ? `Top cases` : 'No case data';
+      document.getElementById('metaRecords').textContent = 'Step1 • Step2 • Step3 counts';
+    }
+
+    // ---------- open Add/Edit and Records modal ----------
+    function openFormPopup(editIndex = null){
+      const url = 'form.html' + (editIndex != null ? ('?edit=' + encodeURIComponent(editIndex)) : '');
+      const opts = 'width=760,height=720,top=80,left=120';
+      const w = window.open(url, 'patient_form', opts) || window.open(url, '_blank');
+      try { w.focus(); } catch(e){}
+    }
+
+    function openRecordsModal(patientIdx){
+      currentRecordIndex = Number(patientIdx);
+      if(typeof populateRecordsForm === 'function') populateRecordsForm(currentRecordIndex);
+      if(typeof showRecordStep === 'function') showRecordStep(0);
+      recordsModal.show();
+    }
+
+    // ---------- records modal behaviour ----------
+    const steps = Array.from(document.querySelectorAll('.step'));
+    const pills = Array.from(document.querySelectorAll('.step-pill'));
+    let currentStep = 0;
+
+    function showRecordStep(n){
+      steps.forEach(s=>s.classList.remove('active'));
+      pills.forEach(p=>p.classList.remove('active'));
+      steps[n].classList.add('active');
+      pills[n].classList.add('active');
+      currentStep = n;
+      document.getElementById('recBack').style.display = n===0 ? 'none':'inline-block';
+      document.getElementById('recNext').style.display = n===steps.length-1 ? 'none':'inline-block';
+      document.getElementById('recSave').style.display = n===steps.length-1 ? 'inline-block':'none';
+    }
+
+    function setValueIf(elId, val){ const el = document.getElementById(elId); if(!el) return; el.value = val || ''; }
+    function clearChecks(name){ document.querySelectorAll('input[name="'+name+'"]').forEach(i=>i.checked=false); }
+
+    function populateRecordsForm(patientIdx){
+      const list = loadPatients();
+      const p = list[patientIdx];
+      if(!p) return;
+      const r = p.records || {};
+
+      setValueIf('rec_fullname', r.fullname || [p.firstName, p.middleName, p.lastName].filter(Boolean).join(' '));
+      setValueIf('rec_age', r.age || p.age || '');
+      clearChecks('rec_sex'); if(r.sex) document.querySelectorAll('input[name="rec_sex"]').forEach(i=>i.checked = (i.value===r.sex));
+      clearChecks('rec_status'); if(r.status) document.querySelectorAll('input[name="rec_status"]').forEach(i=>i.checked = (i.value===r.status));
+      setValueIf('rec_address', r.address); setValueIf('rec_occupation', r.occupation);
+      clearChecks('rec_handed'); if(r.handedness) document.querySelectorAll('input[name="rec_handed"]').forEach(i=>i.checked = (i.value===r.handedness));
+      clearChecks('rec_edu'); if(r.education) document.querySelectorAll('input[name="rec_edu"]').forEach(i=>i.checked = (i.value===r.education));
+      setValueIf('rec_edu_other', r.educationOther);
+      setValueIf('rec_nationality', r.nationality); setValueIf('rec_refmd', r.refmd); setValueIf('rec_rehabmd', r.rehabmd);
+      setValueIf('rec_date_ref', r.dateRef); setValueIf('rec_unit', r.unit); setValueIf('rec_phone', r.phone || p.phoneNumber || '');
+      setValueIf('rec_reg', r.regNo); setValueIf('rec_diagnosis', r.diagnosis);
+      setValueIf('rec_chief', r.chief); setValueIf('rec_onset', r.onset); setValueIf('rec_mech', r.mechanism);
+      setValueIf('rec_meds', r.meds); setValueIf('rec_surg', r.surgery); setValueIf('rec_lab', r.lab);
+      setValueIf('rec_xray', r.xray); setValueIf('rec_mre', r.mre); setValueIf('rec_ct', r.ct);
+      setValueIf('rec_emg', r.emg); setValueIf('rec_prevther', r.prevther); setValueIf('rec_allergies', r.allergies);
+      setValueIf('rec_heredo', r.heredo); setValueIf('rec_home', r.home); setValueIf('rec_goals', r.goals);
+      clearChecks('rec_sensor'); if(Array.isArray(r.sensorium)) r.sensorium.forEach(v=>document.querySelectorAll('input[name="rec_sensor"]').forEach(i=>{ if(i.value===v) i.checked=true; }));
+      clearChecks('rec_built'); if(r.built) document.querySelectorAll('input[name="rec_built"]').forEach(i=>i.checked=(i.value===r.built));
+      clearChecks('rec_orient'); if(Array.isArray(r.orient)) r.orient.forEach(v=>document.querySelectorAll('input[name="rec_orient"]').forEach(i=>{ if(i.value===v) i.checked=true; }));
+      setValueIf('rec_orient_text', r.orientText);
+      clearChecks('rec_mob'); if(Array.isArray(r.mob)) r.mob.forEach(v=>document.querySelectorAll('input[name="rec_mob"]').forEach(i=>{ if(i.value===v) i.checked=true; }));
+      setValueIf('rec_mob_device', r.mobDevice); setValueIf('rec_findings', r.findings);
+      setValueIf('rec_tender', r.tender); setValueIf('rec_pitting', r.pitting); setValueIf('rec_others', r.others);
+      setValueIf('rec_bp', r.bp); setValueIf('rec_pr', r.pr); setValueIf('rec_rr', r.rr); setValueIf('rec_spo2', r.spo2); setValueIf('rec_temp', r.temp);
+
+      document.getElementById('saveStep1').checked = !!(r && (r.fullname || r.address || r.diagnosis || r.refmd || r.rehabmd));
+      document.getElementById('saveStep2').checked = !!(r && r.chief);
+      document.getElementById('saveStep3').checked = !!(r && (r.findings || r.bp || r.tender || r.pitting || r._objectiveSaved));
+    }
+
+    function collectStep1(){ return {
+      fullname: document.getElementById('rec_fullname').value.trim(),
+      age: document.getElementById('rec_age').value || '',
+      sex: (document.querySelector('input[name="rec_sex"]:checked')||{}).value || null,
+      status: (document.querySelector('input[name="rec_status"]:checked')||{}).value || null,
+      address: document.getElementById('rec_address').value.trim(),
+      occupation: document.getElementById('rec_occupation').value.trim(),
+      handedness: (document.querySelector('input[name="rec_handed"]:checked')||{}).value || null,
+      education: (document.querySelector('input[name="rec_edu"]:checked')||{}).value || null,
+      educationOther: document.getElementById('rec_edu_other').value.trim(),
+      nationality: document.getElementById('rec_nationality').value.trim(),
+      refmd: document.getElementById('rec_refmd').value.trim(),
+      rehabmd: document.getElementById('rec_rehabmd').value.trim(),
+      dateRef: document.getElementById('rec_date_ref').value || '',
+      unit: document.getElementById('rec_unit').value.trim(),
+      phone: document.getElementById('rec_phone').value.trim(),
+      regNo: document.getElementById('rec_reg').value.trim(),
+      diagnosis: document.getElementById('rec_diagnosis').value.trim()
+    }; }
+    function collectStep2(){ return {
+      chief: document.getElementById('rec_chief').value.trim(),
+      onset: document.getElementById('rec_onset').value || '',
+      mechanism: document.getElementById('rec_mech').value.trim(),
+      meds: document.getElementById('rec_meds').value.trim(),
+      surgery: document.getElementById('rec_surg').value.trim(),
+      lab: document.getElementById('rec_lab').value.trim(),
+      xray: document.getElementById('rec_xray').value.trim(),
+      mre: document.getElementById('rec_mre').value.trim(),
+      ct: document.getElementById('rec_ct').value.trim(),
+      emg: document.getElementById('rec_emg').value.trim(),
+      prevther: document.getElementById('rec_prevther').value.trim(),
+      allergies: document.getElementById('rec_allergies').value.trim(),
+      heredo: document.getElementById('rec_heredo').value.trim(),
+      home: document.getElementById('rec_home').value.trim(),
+      goals: document.getElementById('rec_goals').value.trim()
+    }; }
+    function collectStep3(){ const getChecks = (name)=>{ const n=document.querySelectorAll('input[name="'+name+'"]'); const arr=[]; n.forEach(x=>{ if(x.checked) arr.push(x.value);}); return arr.length?arr:null; };
+      return {
+        sensorium: getChecks('rec_sensor'),
+        built: (document.querySelector('input[name="rec_built"]:checked')||{}).value || null,
+        orient: getChecks('rec_orient'),
+        orientText: document.getElementById('rec_orient_text').value.trim(),
+        mob: getChecks('rec_mob'),
+        mobDevice: document.getElementById('rec_mob_device').value.trim(),
+        findings: document.getElementById('rec_findings').value.trim(),
+        tender: document.getElementById('rec_tender').value || '',
+        pitting: document.getElementById('rec_pitting').value.trim(),
+        others: document.getElementById('rec_others').value.trim(),
+        bp: document.getElementById('rec_bp').value.trim(),
+        pr: document.getElementById('rec_pr').value.trim(),
+        rr: document.getElementById('rec_rr').value.trim(),
+        spo2: document.getElementById('rec_spo2').value.trim(),
+        temp: document.getElementById('rec_temp').value.trim()
+      }; }
+
+    // Step checkbox handlers
+    document.getElementById('saveStep1').addEventListener('change', function(){
+      if(currentRecordIndex == null) return;
+      const list = loadPatients(); const i = Number(currentRecordIndex); if(!list[i]) return;
+      if(this.checked){ list[i].records = list[i].records || {}; Object.assign(list[i].records, collectStep1()); }
+      else { if(list[i].records){ ['fullname','age','sex','status','address','occupation','handedness','education','educationOther','nationality','refmd','rehabmd','dateRef','unit','phone','regNo','diagnosis'].forEach(k=>delete list[i].records[k]); } }
+      savePatients(list); renderDataTable(); updateAnalytics();
+    });
+    document.getElementById('saveStep2').addEventListener('change', function(){
+      if(currentRecordIndex == null) return;
+      const list = loadPatients(); const i = Number(currentRecordIndex); if(!list[i]) return;
+      if(this.checked){ list[i].records = list[i].records || {}; Object.assign(list[i].records, collectStep2()); }
+      else { if(list[i].records){ ['chief','onset','mechanism','meds','surgery','lab','xray','mre','ct','emg','prevther','allergies','heredo','home','goals'].forEach(k=>delete list[i].records[k]); } }
+      savePatients(list); renderDataTable(); updateAnalytics();
+    });
+    document.getElementById('saveStep3').addEventListener('change', function(){
+      if(currentRecordIndex == null) return;
+      const list = loadPatients(); const i = Number(currentRecordIndex); if(!list[i]) return;
+      if(this.checked){ list[i].records = list[i].records || {}; const s3=collectStep3(); s3._objectiveSaved=true; Object.assign(list[i].records, s3); }
+      else { if(list[i].records){ ['sensorium','built','orient','orientText','mob','mobDevice','findings','tender','pitting','others','bp','pr','rr','spo2','temp','_objectiveSaved'].forEach(k=>delete list[i].records[k]); } }
+      savePatients(list); renderDataTable(); updateAnalytics();
+    });
+
+    // modal navigation
+    document.getElementById('recNext').addEventListener('click', ()=>{ if(currentStep < steps.length-1) showRecordStep(currentStep+1); });
+    document.getElementById('recBack').addEventListener('click', ()=>{ if(currentStep>0) showRecordStep(currentStep-1); });
+
+    // Save all button
+    document.getElementById('recordsForm').addEventListener('submit', function(e){
+      e.preventDefault();
+      if(currentRecordIndex == null) return alert('Invalid patient index');
+      const list = loadPatients(); const i = Number(currentRecordIndex); if(!list[i]) return alert('Patient not found');
+      list[i].records = list[i].records || {};
+      Object.assign(list[i].records, collectStep1());
+      Object.assign(list[i].records, collectStep2());
+      const s3 = collectStep3(); s3._objectiveSaved = true; Object.assign(list[i].records, s3);
+      savePatients(list);
+      recordsModal.hide();
+      renderDataTable(); updateAnalytics();
+    });
+
+    // ---------- Pending inquiries integration (local only) ----------
+    (function(){
+      const inquiriesModalEl = document.getElementById('inquiriesModal');
+      const inquiriesModal = inquiriesModalEl ? new bootstrap.Modal(inquiriesModalEl) : null;
+
+      function updatePendingInquiriesTile(){
+        const list = loadInquiries();
+        const pending = list.filter(i => i.status === 'pending').length;
+        const el = document.getElementById('countInquiries');
+        const meta = document.getElementById('metaInquiries');
+        if(el) el.textContent = pending;
+        if(meta) meta.textContent = `From inquire form: ${pending} pending`;
+      }
+
+      function renderInquiriesList(){
+        const all = loadInquiries();
+        const pendingList = all.filter(i => i.status === 'pending').slice().reverse();
+        const container = document.getElementById('inquiriesList');
+        if(!container) return;
+        container.innerHTML = '';
+        if(!pendingList.length){
+          container.innerHTML = '<div class="text-muted">No pending inquiries</div>';
+          return;
+        }
+        pendingList.forEach(i => {
+          const item = document.createElement('div');
+          item.className = 'list-group-item';
+          item.innerHTML = `
+            <div class="d-flex w-100 justify-content-between">
+              <h6 class="mb-1">${escapeHtml((i.patient.firstName||'') + ' ' + (i.patient.middleName?i.patient.middleName+' ':'') + (i.patient.lastName||''))}</h6>
+              <small class="text-muted">${new Date(i.createdAt).toLocaleString()}</small>
+            </div>
+            <p class="mb-1"><strong>Case:</strong> ${escapeHtml(i.patient.case||'—')}</p>
+            <div class="small text-muted mb-2"><strong>Phone:</strong> ${escapeHtml(i.patient.phone||'—')} &nbsp; <strong>DOB:</strong> ${escapeHtml(i.patient.dob||'—')}</div>
+            <div class="d-flex gap-2">
+              <button class="btn btn-sm btn-outline-primary view-inq" data-id="${i.id}">View</button>
+              <button class="btn btn-sm btn-success handle-inq" data-id="${i.id}">Mark handled</button>
+            </div>
+          `;
+          container.appendChild(item);
+        });
+
+        container.querySelectorAll('.view-inq').forEach(btn => btn.addEventListener('click', (ev) => {
+          const id = ev.currentTarget.dataset.id; openInquiryDetail(id);
+        }));
+        container.querySelectorAll('.handle-inq').forEach(btn => btn.addEventListener('click', (ev) => {
+          const id = ev.currentTarget.dataset.id; markInquiryHandled(id);
+        }));
+      }
+
+      function markInquiryHandled(id){
+        const list = loadInquiries();
+        const idx = list.findIndex(x => x.id === id);
+        if(idx === -1) return;
+        list[idx].status = 'handled';
+        saveInquiries(list);
+        renderInquiriesList();
+        updatePendingInquiriesTile();
+      }
+
+      function openInquiryDetail(id){
+        const list = loadInquiries();
+        const i = list.find(x => x.id === id);
+        if(!i) return alert('Inquiry not found');
+        const container = document.getElementById('inquiriesList');
+        container.innerHTML = `
+          <div>
+            <h5>${escapeHtml((i.patient.firstName||'') + ' ' + (i.patient.middleName?i.patient.middleName+' ':'') + (i.patient.lastName||''))}</h5>
+            <p><strong>Phone:</strong> ${escapeHtml(i.patient.phone||'—')}<br/>
+            <strong>Email:</strong> ${escapeHtml(i.patient.email||'—')}<br/>
+            <strong>Address:</strong> ${escapeHtml(i.patient.address||'—')}<br/>
+            <strong>DOB:</strong> ${escapeHtml(i.patient.dob||'—')}<br/>
+            <strong>Case:</strong> ${escapeHtml(i.patient.case||'—')}</p>
+            <hr/>
+            <h6>Emergency Contact</h6>
+            <p><strong>${escapeHtml((i.emergency.firstName||'') + ' ' + (i.emergency.lastName||''))}</strong><br/>
+            <strong>Phone:</strong> ${escapeHtml(i.emergency.phone||'—')}<br/>
+            <strong>Email:</strong> ${escapeHtml(i.emergency.email||'—')}<br/>
+            <strong>Relation:</strong> ${escapeHtml(i.emergency.relation||'—')}</p>
+            <div class="d-flex gap-2">
+              <button class="btn btn-sm btn-success" id="detailMarkHandled">Mark handled</button>
+              <button class="btn btn-sm btn-secondary" id="detailBack">Back</button>
+            </div>
+          </div>
+        `;
+        document.getElementById('detailBack').addEventListener('click', () => { renderInquiriesList(); });
+        document.getElementById('detailMarkHandled').addEventListener('click', () => { markInquiryHandled(id); });
+      }
+
+      function escapeHtml(s){ return String(s||'').replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll('"','&quot;'); }
+
+      document.getElementById('openInquiries').addEventListener('click', () => {
+        renderInquiriesList();
+        if(inquiriesModal) inquiriesModal.show();
+      });
+
+      const clearAllBtn = document.getElementById('inquiriesClearAll');
+      if(clearAllBtn){
+        clearAllBtn.addEventListener('click', () => {
+          if(!confirm('Mark all pending inquiries as handled?')) return;
+          const list = loadInquiries();
+          list.forEach(i => { if(i.status === 'pending') i.status = 'handled'; });
+          saveInquiries(list);
+          renderInquiriesList();
+          updatePendingInquiriesTile();
+        });
+      }
+
+      window.addEventListener('storage', (e) => {
+        if(!e.key) return;
+        if(e.key === INQUIRY_KEY || e.key === INQUIRY_KEY + '_updated_at') {
+          updatePendingInquiriesTile();
+        }
+      });
+
+      updatePendingInquiriesTile();
+      setInterval(updatePendingInquiriesTile, 10000);
+      window.__inquiryHelpers = { updatePendingInquiriesTile, renderInquiriesList };
+    })();
+
+    // ---------- init & handlers ----------
+    $(document).ready(function(){
+      renderDataTable();
+      updateAnalytics();
+
+      document.getElementById('openAddPatient').addEventListener('click', function(e){
+        e.preventDefault(); openFormPopup();
+      });
+
+      window.addEventListener('storage', function(e){
+        if(!e.key) return;
+        if(e.key.indexOf(STORAGE_KEY) === 0 || e.key === INQUIRY_KEY || e.key === INQUIRY_KEY + '_updated_at') { renderDataTable(); updateAnalytics(); }
+      });
+
+      window.addEventListener('message', function(ev){
+        try{ const same=(ev.origin===location.origin)||(ev.origin==='null'&&location.protocol==='file:'); if(!same) return; } catch(e){ return; }
+        if(ev.data && ev.data.type==='patients_sync'){ renderDataTable(); updateAnalytics(); }
+      }, false);
+
+      const calendarEl = document.getElementById('calendar');
+      const calendar = new FullCalendar.Calendar(calendarEl, {
+        initialView: 'dayGridMonth',
+        headerToolbar: { left:'prev,next today', center:'title', right:'dayGridMonth,timeGridWeek,timeGridDay' },
+        events: []
+      });
+      calendar.render();
+    });
+  </script>
+</body>
+</html>

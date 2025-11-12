@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Welcome to Phyrex</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" />
+  <style>
+    body {
+      background-color: #f0f2f5;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+    }
+    .login-box {
+      background-color: white;
+      padding: 40px;
+      border-radius: 10px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+      width: 100%;
+      max-width: 400px;
+    }
+    .login-box h2 {
+      text-align: center;
+      margin-bottom: 30px;
+    }
+  </style>
+</head>
+<body>
+  <div class="login-box">
+    <h2>Welcome to Phyrex</h2>
+    <form onsubmit="validateLogin(event)">
+      <div class="mb-3 row align-items-center">
+        <label for="passcode" class="col-sm-4 col-form-label">Passcode:</label>
+        <div class="col-sm-8">
+          <input type="password" id="passcode" class="form-control" placeholder="Enter passcode" required />
+        </div>
+      </div>
+      <button type="submit" class="btn btn-primary w-100">Log In</button>
+    </form>
+    <p id="errorMsg" class="text-danger mt-3 text-center" style="display:none;">Incorrect passcode. Try again.</p>
+  </div>
+
+  <script>
+    function validateLogin(event) {
+      event.preventDefault();
+      const code = document.getElementById("passcode").value;
+      if (code === "BARBEQUE") {
+        window.location.href = "dashboard.html"; // Redirect to your dashboard
+      } else {
+        document.getElementById("errorMsg").style.display = "block";
+      }
+    }
+  </script>
+</body>
+</html>
